@@ -1,0 +1,89 @@
+# Render Blueprint for LearnCS01's backend.
+#
+# Deploys entirely on Render's free Hobby tier:
+#   - one free Web Service (the API), which also runs the certificate
+#     generation worker in-process (RUN_WORKER_INLINE=true) - this is
+#     because Render's free instance type is only available for Web
+#     Services, not Background Workers, so a single combined service is
+#     the only way to stay fully on the free tier. See DEPLOYMENT.md for
+#     how to split this into a separate paid worker service later.
+#   - one free Key Value (Redis-compatible) instance for BullMQ + the
+#     Socket.io cross-instance adapter.
+#
+# MongoDB is intentionally NOT defined here - Render doesn't offer a
+# MongoDB-compatible managed database. Use MongoDB Atlas's free M0 tier
+# instead (see DEPLOYMENT.md) and paste its connection string in when
+# prompted for MONGO_URI below.
+#
+# Usage: push this repo to GitHub, then in the Render Dashboard choose
+# "New > Blueprint" and point it at this file.
+
+services:
+  - type: web
+    name: learncs01-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Runs the certificate-generation worker inside this same process -
+      # see the comment at the top of this file for why.
+      - key: RUN_WORKER_INLINE
+        value: 'true'
+
+      # Render auto-generates a strong random value for this on first deploy.
+      - key: JWT_SECRET
+        generateValue: true
+
+      # Paste your MongoDB Atlas connection string when prompted during
+      # Blueprint creation (mongodb+srv://...).
+      - key: MONGO_URI
+        sync: false
+
+      # Your Vercel frontend URL(s), comma-separated, e.g.
+      # https://learncs01.vercel.app - required for CORS + secure cookies
+      # to work cross-domain. You can update this after your Vercel deploy
+      # is live (Render dashboard > learncs01-api > Environment).
+      - key: CLIENT_URLS
+        sync: false
+
+      # Optional for basic testing (browsing, login, dashboards, chat, admin
+      # permissions, YouTube video management all work without these) -
+      # required only to test the Stripe/SSLCommerz purchase flow and S3
+      # video uploads / certificate PDF storage. See DEPLOYMENT.md.
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: SSLCOMMERZ_STORE_ID
+        sync: false
+      - key: SSLCOMMERZ_STORE_PASSWORD
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_BUCKET
+        sync: false
+
+      # Connects to the Key Value instance defined below over Render's
+      # private network - no manual copying of connection strings needed.
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: learncs01-redis
+          property: connectionString
+
+  - type: keyvalue
+    name: learncs01-redis
+    plan: free
+    ipAllowList: [] # internal-only: both consumers (this Blueprint's web service) are on Render's private network
+    maxmemoryPolicy: noeviction
