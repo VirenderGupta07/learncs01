@@ -1,4 +1,5 @@
 const { Emitter } = require('@socket.io/redis-emitter');
+const logger = require('../config/logger');
 const redisConnection = require('../config/redis');
 
 /**
@@ -10,6 +11,12 @@ const redisConnection = require('../config/redis');
  * *any* of the API's PM2 cluster workers, exactly like a normal
  * `io.to(...).emit(...)` call would from inside the API itself.
  */
-const emitter = new Emitter(redisConnection.duplicate());
+let emitter = null;
+
+if (redisConnection) {
+  emitter = new Emitter(redisConnection.duplicate());
+} else {
+  logger.warn('Socket emitter disabled because Redis is not configured.');
+}
 
 module.exports = emitter;

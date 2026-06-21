@@ -16,6 +16,11 @@ const socketEmitter = require('../sockets/emitter');
  * RUN_WORKER_INLINE=true) without opening a redundant second connection.
  */
 function createCertificateWorker() {
+  if (!redisConnection) {
+    logger.warn('Certificate worker not started because REDIS_URL is not configured.');
+    return null;
+  }
+
   const worker = new Worker(
     'certificate-generation',
     async (job) => {

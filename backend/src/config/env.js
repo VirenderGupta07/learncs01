@@ -52,7 +52,7 @@ module.exports = {
   AWS_S3_BUCKET: process.env.AWS_S3_BUCKET,
   AWS_CLOUDFRONT_DOMAIN: process.env.AWS_CLOUDFRONT_DOMAIN,
 
-  REDIS_URL: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
+  REDIS_URL: process.env.REDIS_URL || (process.env.NODE_ENV === 'production' ? '' : 'redis://127.0.0.1:6379'),
 
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: process.env.SMTP_PORT,

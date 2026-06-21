@@ -19,12 +19,16 @@ function initSockets(httpServer) {
   // single process's in-memory room registry by default. Reusing the
   // existing Redis connection (also used for BullMQ) avoids standing up a
   // second Redis just for this.
-  const pubClient = redisConnection.duplicate();
-  const subClient = redisConnection.duplicate();
-  io.adapter(createAdapter(pubClient, subClient));
+  if (redisConnection && env.REDIS_URL) {
+    const pubClient = redisConnection.duplicate();
+    const subClient = redisConnection.duplicate();
+    io.adapter(createAdapter(pubClient, subClient));
 
-  pubClient.on('error', (err) => logger.error(`Socket.io Redis pub client error: ${err.message}`));
-  subClient.on('error', (err) => logger.error(`Socket.io Redis sub client error: ${err.message}`));
+    pubClient.on('error', (err) => logger.error(`Socket.io Redis pub client error: ${err.message}`));
+    subClient.on('error', (err) => logger.error(`Socket.io Redis sub client error: ${err.message}`));
+  } else {
+    logger.warn('Redis adapter disabled because REDIS_URL is not configured; socket.io will fall back to in-memory behavior.');
+  }
 
   io.use(socketAuth);
 

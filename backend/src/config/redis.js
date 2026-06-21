@@ -1,8 +1,10 @@
 const IORedis = require('ioredis');
 const env = require('./env');
 
-const connection = new IORedis(env.REDIS_URL, {
-  maxRetriesPerRequest: null,
-});
+const connection = env.REDIS_URL
+  ? new IORedis(env.REDIS_URL, {
+      maxRetriesPerRequest: null,
+    })
+  : null;
 
 module.exports = connection;

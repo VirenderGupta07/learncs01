@@ -98,17 +98,21 @@ exports.verifyQuiz = catchAsync(async (req, res, next) => {
   }
 
   if (certificate) {
-    try {
-      await certificateQueue.add(
-        'generate-certificate',
-        { certificateId: certificate._id.toString() },
-        { attempts: 3, backoff: { type: 'exponential', delay: 5000 } }
-      );
-    } catch (err) {
-      // The DB state is already correct (status: 'processing'); a failed
-      // enqueue here just means generation is delayed, not lost - log loudly
-      // so ops can requeue manually if needed.
-      logger.error(`Failed to enqueue certificate generation job for ${certificate._id}: ${err.message}`);
+    if (certificateQueue) {
+      try {
+        await certificateQueue.add(
+          'generate-certificate',
+          { certificateId: certificate._id.toString() },
+          { attempts: 3, backoff: { type: 'exponential', delay: 5000 } }
+        );
+      } catch (err) {
+        // The DB state is already correct (status: 'processing'); a failed
+        // enqueue here just means generation is delayed, not lost - log loudly
+        // so ops can requeue manually if needed.
+        logger.error(`Failed to enqueue certificate generation job for ${certificate._id}: ${err.message}`);
+      }
+    } else {
+      logger.warn(`Certificate job was not enqueued because Redis is not configured for ${certificate._id}`);
     }
   }
 
