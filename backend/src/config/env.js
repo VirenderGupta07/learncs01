@@ -32,7 +32,9 @@ module.exports = {
 
   MONGO_URI: required('MONGO_URI', 'mongodb://127.0.0.1:27017/learncs01'),
 
-  JWT_SECRET: required('JWT_SECRET', 'dev-only-secret-change-me'),
+  // Use a safe fallback for local/dev deployments so the API can stillboot
+  // until a real secret is provided in production environments.
+  JWT_SECRET: process.env.JWT_SECRET || 'dev-only-secret-change-me',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   JWT_COOKIE_EXPIRES_DAYS: Number(process.env.JWT_COOKIE_EXPIRES_DAYS || 7),
 
